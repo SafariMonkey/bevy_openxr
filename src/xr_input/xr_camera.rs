@@ -7,7 +7,7 @@ use bevy::prelude::*;
 use bevy::render::camera::{CameraProjection, CameraRenderGraph, RenderTarget};
 use bevy::render::extract_component::ExtractComponent;
 use bevy::render::primitives::Frustum;
-use bevy::render::view::{ColorGrading, VisibleEntities};
+use bevy::render::view::{ColorGrading, ExtractedView, VisibleEntities};
 use openxr::Fovf;
 
 #[derive(Bundle)]
@@ -276,6 +276,7 @@ pub fn xr_camera_head_sync(
 ) {
     //TODO calculate HMD position
     for (mut transform, camera_type, mut xr_projection) in query.iter_mut() {
+        println!("xr_camera_head_sync got camera");
         let view_idx = match camera_type {
             XrCameraType::Xr(eye) => *eye as usize,
             // I don't belive we need a flatscrenn cam, that's just a cam without this component
@@ -286,7 +287,33 @@ pub fn xr_camera_head_sync(
             None => continue,
         };
         xr_projection.fov = view.fov;
-        transform.rotation = view.pose.orientation.to_quat();
-        transform.translation = view.pose.position.to_vec3();
+        // transform.rotation = view.pose.orientation.to_quat();
+        // transform.translation = view.pose.position.to_vec3();
+    }
+}
+pub fn xr_camera_head_sync_render(
+    views: ResMut<crate::resources::XrViews>,
+    mut query: Query<(&mut ExtractedView, &XrCameraType, &mut XRProjection)>,
+) {
+    //TODO calculate HMD position
+    for (mut extracted_view, camera_type, mut xr_projection) in query.iter_mut() {
+        println!("xr_camera_head_sync_render got camera");
+        let view_idx = match camera_type {
+            XrCameraType::Xr(eye) => *eye as usize,
+            // I don't belive we need a flatscrenn cam, that's just a cam without this component
+            XrCameraType::Flatscreen => continue,
+        };
+        let view = match views.get(view_idx) {
+            Some(views) => views,
+            None => continue,
+        };
+        // xr_projection.fov = view.fov;
+        extracted_view.transform = GlobalTransform::from(Transform {
+            translation: view.pose.position.to_vec3(),
+            rotation: view.pose.orientation.to_quat(),
+            scale: Vec3::ONE,
+        });
+        extracted_view.view_projection = None;
+        println!("xr_camera_head_sync_render set camera transform");
     }
 }

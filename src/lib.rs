@@ -162,14 +162,14 @@ impl Plugin for OpenXrPlugin {
             Render,
             (
                 locate_views,
-                xr_input::xr_camera::xr_camera_head_sync,
+                xr_input::xr_camera::xr_camera_head_sync_render,
                 sync_simple_transforms,
                 propagate_transforms,
             )
                 .chain()
                 .run_if(xr_only())
                 .run_if(xr_render_only())
-                .in_set(RenderSet::Prepare),
+                .in_set(RenderSet::ManageViews),
         );
         render_app.add_systems(
             Render,
@@ -478,6 +478,7 @@ pub fn locate_views(
     session: Res<XrSession>,
     xr_frame_state: Res<XrFrameState>,
 ) {
+    println!("locate_views");
     let _span = info_span!("xr_locate_views").entered();
     **views = match session.locate_views(
         VIEW_TYPE,
